@@ -97,6 +97,7 @@ export const fetchCommitList = async (
 };
 
 // Fetch commit details (files changed) - serialized to avoid rate limits
+// Fetch commit details (files changed) - parallelized with concurrency limit
 export const fetchCommitDetails = async (
   owner: string,
   repo: string,
@@ -108,28 +109,53 @@ export const fetchCommitDetails = async (
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const details: CommitDetail[] = [];
+  let completedCount = 0;
+  const CONCURRENCY_LIMIT = 25;
 
-  for (let i = 0; i < shas.length; i++) {
-    onProgress?.({
-      phase: 'details',
-      current: i + 1,
-      total: shas.length,
-      message: `Fetching commit details (${i + 1}/${shas.length})...`,
-    });
-
-    const url = `https://api.github.com/repos/${owner}/${repo}/commits/${shas[i]}`;
+  const fetchSingleDetail = async (sha: string): Promise<CommitDetail> => {
+    const url = `https://api.github.com/repos/${owner}/${repo}/commits/${sha}`;
     const res = await rateLimitedFetch(url, headers);
     const data = await res.json();
 
-    details.push({
+    completedCount++;
+    onProgress?.({
+      phase: 'details',
+      current: completedCount,
+      total: shas.length,
+      message: `Fetching commit details (${completedCount}/${shas.length})...`,
+    });
+
+    return {
       sha: data.sha,
       files: data.files || [],
       stats: data.stats || { additions: 0, deletions: 0, total: 0 },
-    });
+    };
+  };
 
-    // Small delay between requests to avoid secondary rate limits
-    if (i < shas.length - 1) {
-      await new Promise((r) => setTimeout(r, 100));
+  // Simple concurrency controller
+  const queue = [...shas];
+  const active: Promise<void>[] = [];
+
+  while (queue.length > 0 || active.length > 0) {
+    while (queue.length > 0 && active.length < CONCURRENCY_LIMIT) {
+      const sha = queue.shift()!;
+      const promise = fetchSingleDetail(sha)
+        .then((detail) => {
+          details.push(detail);
+        })
+        .catch((e) => {
+          console.error(`Failed to fetch commit ${sha}:`, e);
+          // push a placeholder or partial valid object if needed, or just skip
+        })
+        .finally(() => {
+          active.splice(active.indexOf(promise), 1);
+        });
+      active.push(promise);
+    }
+
+    if (active.length > 0) {
+      // Wait for at least one to finish before checking/filling queue again
+      await Promise.race(active);
     }
   }
 
