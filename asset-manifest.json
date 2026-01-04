@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/gitingest-replica/static/css/main.7b4c9a76.css",
-    "main.js": "/gitingest-replica/static/js/main.984ad612.js",
-    "static/js/453.f2342be2.chunk.js": "/gitingest-replica/static/js/453.f2342be2.chunk.js",
-    "index.html": "/gitingest-replica/index.html",
-    "main.7b4c9a76.css.map": "/gitingest-replica/static/css/main.7b4c9a76.css.map",
-    "main.984ad612.js.map": "/gitingest-replica/static/js/main.984ad612.js.map",
-    "453.f2342be2.chunk.js.map": "/gitingest-replica/static/js/453.f2342be2.chunk.js.map"
+    "main.css": "/repo-insights/static/css/main.62e4df4b.css",
+    "main.js": "/repo-insights/static/js/main.1879bb07.js",
+    "static/js/453.28e78866.chunk.js": "/repo-insights/static/js/453.28e78866.chunk.js",
+    "index.html": "/repo-insights/index.html",
+    "main.62e4df4b.css.map": "/repo-insights/static/css/main.62e4df4b.css.map",
+    "main.1879bb07.js.map": "/repo-insights/static/js/main.1879bb07.js.map",
+    "453.28e78866.chunk.js.map": "/repo-insights/static/js/453.28e78866.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.7b4c9a76.css",
-    "static/js/main.984ad612.js"
+    "static/css/main.62e4df4b.css",
+    "static/js/main.1879bb07.js"
   ]
 }
