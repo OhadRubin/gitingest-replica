@@ -2,6 +2,8 @@
 
 A client-side GitHub repository analytics tool built with React, TypeScript, and Tailwind CSS. Discover which files change most, who contributes what, and how your codebase evolves over time.
 
+🚀 **[Live Demo](https://ohadrubin.github.io/repo-insights/)**
+
 ## Features
 
 - **Hot Files**: Ranked list of most-changed files by commit frequency, additions, or deletions
