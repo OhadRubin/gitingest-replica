@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/gitingest-replica/static/css/main.7b4c9a76.css",
+    "main.js": "/gitingest-replica/static/js/main.984ad612.js",
+    "static/js/453.f2342be2.chunk.js": "/gitingest-replica/static/js/453.f2342be2.chunk.js",
+    "index.html": "/gitingest-replica/index.html",
+    "main.7b4c9a76.css.map": "/gitingest-replica/static/css/main.7b4c9a76.css.map",
+    "main.984ad612.js.map": "/gitingest-replica/static/js/main.984ad612.js.map",
+    "453.f2342be2.chunk.js.map": "/gitingest-replica/static/js/453.f2342be2.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.7b4c9a76.css",
+    "static/js/main.984ad612.js"
+  ]
+}
