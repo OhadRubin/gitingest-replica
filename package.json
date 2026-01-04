@@ -1,8 +1,8 @@
 {
-  "name": "react-github-pages-template",
-  "version": "0.1.0",
+  "name": "repo-insights",
+  "version": "1.0.0",
   "private": true,
-  "homepage": "https://OhadRubin.github.io/gitingest-replica",
+  "homepage": "https://OhadRubin.github.io/repo-insights",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -14,7 +14,6 @@
     "@types/react-dom": "^19.0.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
-    "gpt-tokenizer": "^3.4.0",
     "lucide-react": "^0.562.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

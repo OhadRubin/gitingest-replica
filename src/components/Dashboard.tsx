@@ -1,28 +1,60 @@
-import React from 'react';
-import { TreeItem } from '../utils/github';
-import FileTree from './FileTree';
-import CodeViewer from './CodeViewer';
-import Stats from './Stats';
+import React, { useState } from 'react';
+import { AnalyticsData } from '../utils/types';
+import AnalyticsStats from './Stats';
+import RankedFileList from './FileTree';
+import ContributorStats from './ContributorStats';
+import ActivityHeatmap from './ActivityHeatmap';
+import ExportPanel from './CodeViewer';
 
 interface DashboardProps {
-  tree: TreeItem[];
-  digest: string;
-  repoSize: number;
-  filesCount: number;
-  tokens: number;
+  data: AnalyticsData;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ tree, digest, repoSize, filesCount, tokens }) => {
+type TabId = 'files' | 'contributors' | 'activity';
+
+const Dashboard: React.FC<DashboardProps> = ({ data }) => {
+  const [activeTab, setActiveTab] = useState<TabId>('files');
+
+  const tabs: { id: TabId; label: string }[] = [
+    { id: 'files', label: 'Hot Files' },
+    { id: 'contributors', label: 'Contributors' },
+    { id: 'activity', label: 'Activity' },
+  ];
+
   return (
     <div className="animate-fade-in-up">
-      <Stats filesCount={filesCount} totalSize={repoSize} totalTokens={tokens} />
-      
+      <AnalyticsStats data={data} />
+
+      {/* Tab Navigation */}
+      <div className="flex gap-1 mb-6 border-b border-gray-700">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <FileTree tree={tree} />
-        </div>
         <div className="lg:col-span-2">
-           <CodeViewer content={digest} />
+          {activeTab === 'files' && <RankedFileList files={data.files} />}
+          {activeTab === 'contributors' && (
+            <ContributorStats contributors={data.contributors} />
+          )}
+          {activeTab === 'activity' && (
+            <ActivityHeatmap weeklyData={data.weeklyActivity} />
+          )}
+        </div>
+        <div className="lg:col-span-1">
+          <ExportPanel data={data} />
         </div>
       </div>
     </div>

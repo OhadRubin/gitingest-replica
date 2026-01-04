@@ -1,72 +1,88 @@
-import React from 'react';
-import { Folder, FileCode } from 'lucide-react';
-import { TreeItem } from '../utils/github';
+import React, { useState } from 'react';
+import { FileCode, TrendingUp, TrendingDown } from 'lucide-react';
+import { FileStats } from '../utils/types';
 
-interface FileTreeProps {
-  tree: TreeItem[];
+interface RankedFileListProps {
+  files: FileStats[];
+  limit?: number;
 }
 
-const FileTree: React.FC<FileTreeProps> = ({ tree }) => {
-  // Build a hierarchy for rendering
-  const hierarchy = React.useMemo(() => {
-    const root: any = {};
-    tree.forEach(item => {
-      const parts = item.path.split('/');
-      let current = root;
-      parts.forEach((part, index) => {
-        if (!current[part]) {
-          current[part] = {
-             name: part,
-             isDir: index < parts.length - 1 || item.type === 'tree',
-             children: {},
-             path: item.path
-          };
+type SortBy = 'commits' | 'additions' | 'deletions';
+
+const RankedFileList: React.FC<RankedFileListProps> = ({ files, limit = 50 }) => {
+  const [sortBy, setSortBy] = useState<SortBy>('commits');
+
+  const sorted = React.useMemo(() => {
+    return [...files]
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'commits':
+            return b.commitCount - a.commitCount;
+          case 'additions':
+            return b.totalAdditions - a.totalAdditions;
+          case 'deletions':
+            return b.totalDeletions - a.totalDeletions;
+          default:
+            throw new Error(`Unknown sort type: ${sortBy}`);
         }
-        current = current[part].children;
-      });
-    });
-    return root;
-  }, [tree]);
+      })
+      .slice(0, limit);
+  }, [files, sortBy, limit]);
 
-  const renderTree = (node: any, depth = 0) => {
-     // Sort folders first, then files
-     const keys = Object.keys(node).sort((a, b) => {
-        const nodeA = node[a];
-        const nodeB = node[b];
-        if (nodeA.isDir && !nodeB.isDir) return -1;
-        if (!nodeA.isDir && nodeB.isDir) return 1;
-        return a.localeCompare(b);
-     });
-
-    return (
-      <ul className={`${depth > 0 ? 'ml-4 border-l border-gray-700 pl-2' : ''}`}>
-        {keys.map(key => {
-          const item = node[key];
-          return (
-            <li key={key} className="my-1">
-              <div className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
-                {item.isDir ? (
-                  <Folder className="w-4 h-4 text-blue-400" />
-                ) : (
-                  <FileCode className="w-4 h-4 text-gray-500" />
-                )}
-                <span>{item.name}</span>
-              </div>
-               {/* Recursion for children */}
-               {Object.keys(item.children).length > 0 && renderTree(item.children, depth + 1)}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  };
+  const maxCommits = sorted[0]?.commitCount || 1;
 
   return (
     <div className="bg-[#161b22] border border-gray-700 rounded-lg p-4 overflow-auto h-[600px]">
-      <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-4">Files</h3>
-      {renderTree(hierarchy)}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+          Most Changed Files
+        </h3>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortBy)}
+          className="bg-[#0d1117] border border-gray-700 rounded px-2 py-1 text-sm text-gray-300"
+        >
+          <option value="commits">By Commits</option>
+          <option value="additions">By Additions</option>
+          <option value="deletions">By Deletions</option>
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        {sorted.map((file, index) => (
+          <div key={file.path} className="group">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-gray-600 w-6 text-right">{index + 1}</span>
+              <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <span className="text-gray-300 truncate flex-1" title={file.path}>
+                {file.path}
+              </span>
+              <div className="flex items-center gap-2 text-xs flex-shrink-0">
+                <span className="text-gray-500">{file.commitCount} commits</span>
+                <span className="text-green-400 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" />+{file.totalAdditions}
+                </span>
+                <span className="text-red-400 flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3" />-{file.totalDeletions}
+                </span>
+              </div>
+            </div>
+            {/* Visual bar showing relative activity */}
+            <div className="ml-9 mt-1 h-1 bg-gray-800 rounded overflow-hidden">
+              <div
+                className="h-full bg-blue-500/50"
+                style={{ width: `${(file.commitCount / maxCommits) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {files.length === 0 && (
+        <p className="text-gray-500 text-center py-8">No file changes found</p>
+      )}
     </div>
   );
 };
 
-export default FileTree;
+export default RankedFileList;

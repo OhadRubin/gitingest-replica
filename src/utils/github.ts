@@ -1,11 +1,4 @@
-export interface TreeItem {
-  path: string;
-  mode: string;
-  type: 'blob' | 'tree';
-  sha: string;
-  size?: number;
-  url: string;
-}
+import { CommitListItem, CommitDetail, FetchProgress } from './types';
 
 export const extractOwnerRepo = (url: string): { owner: string; repo: string } | null => {
   try {
@@ -24,64 +17,121 @@ export const extractOwnerRepo = (url: string): { owner: string; repo: string } |
   return null;
 };
 
-export const fetchRepoTree = async (
-  owner: string,
-  repo: string,
-  token?: string
-): Promise<TreeItem[]> => {
-  // First get the default branch
-  const branchHeaders: HeadersInit = {
-    Accept: 'application/vnd.github.v3+json',
-  };
-  if (token) {
-    branchHeaders.Authorization = `Bearer ${token}`;
+// Rate-limit aware fetch with exponential backoff
+const rateLimitedFetch = async (
+  url: string,
+  headers: HeadersInit,
+  retries = 3
+): Promise<Response> => {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const res = await fetch(url, { headers });
+
+    if (res.status === 403) {
+      const resetTime = res.headers.get('X-RateLimit-Reset');
+      if (resetTime) {
+        const waitMs = parseInt(resetTime) * 1000 - Date.now();
+        if (waitMs > 0 && waitMs < 60000) {
+          await new Promise((r) => setTimeout(r, waitMs + 1000));
+          continue;
+        }
+      }
+      throw new Error('Rate limit exceeded. Please try again later or add a GitHub token.');
+    }
+
+    if (res.status === 202) {
+      // GitHub is computing stats, wait and retry
+      await new Promise((r) => setTimeout(r, 2000));
+      continue;
+    }
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error('Repository not found');
+      }
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+
+    return res;
   }
-
-  const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: branchHeaders,
-  });
-
-  if (!repoRes.ok) {
-    throw new Error(
-      repoRes.status === 404
-        ? 'Repository not found'
-        : repoRes.status === 403
-        ? 'Rate limit exceeded'
-        : 'Failed to fetch repository details'
-    );
-  }
-
-  const repoData = await repoRes.json();
-  const defaultBranch = repoData.default_branch;
-
-  // Now fetch the tree recursively
-  const treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`;
-  const treeRes = await fetch(treeUrl, { headers: branchHeaders });
-
-  if (!treeRes.ok) {
-    throw new Error('Failed to fetch repository tree');
-  }
-
-  const treeData = await treeRes.json();
-  if (treeData.truncated) {
-    // Optionally handle truncation warning
-    console.warn('Tree is truncated');
-  }
-
-  return treeData.tree;
+  throw new Error('Max retries exceeded');
 };
 
-export const fetchFileContent = async (url: string, token?: string): Promise<string> => {
-  const headers: HeadersInit = {
-    Accept: 'application/vnd.github.v3.raw', // Request raw content directly
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+// Fetch commits with pagination (up to maxCommits)
+export const fetchCommitList = async (
+  owner: string,
+  repo: string,
+  token: string | undefined,
+  maxCommits = 500,
+  onProgress?: (p: FetchProgress) => void
+): Promise<CommitListItem[]> => {
+  const headers: HeadersInit = { Accept: 'application/vnd.github.v3+json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const commits: CommitListItem[] = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (commits.length < maxCommits) {
+    onProgress?.({
+      phase: 'commits',
+      current: commits.length,
+      total: maxCommits,
+      message: `Fetching commit list (page ${page})...`,
+    });
+
+    const url = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${perPage}&page=${page}`;
+    const res = await rateLimitedFetch(url, headers);
+    const data: CommitListItem[] = await res.json();
+
+    if (data.length === 0) break;
+    commits.push(...data);
+
+    // Check Link header for next page
+    const linkHeader = res.headers.get('Link');
+    if (!linkHeader?.includes('rel="next"')) break;
+
+    page++;
   }
 
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    throw new Error('Failed to fetch file content');
+  return commits.slice(0, maxCommits);
+};
+
+// Fetch commit details (files changed) - serialized to avoid rate limits
+export const fetchCommitDetails = async (
+  owner: string,
+  repo: string,
+  shas: string[],
+  token: string | undefined,
+  onProgress?: (p: FetchProgress) => void
+): Promise<CommitDetail[]> => {
+  const headers: HeadersInit = { Accept: 'application/vnd.github.v3+json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const details: CommitDetail[] = [];
+
+  for (let i = 0; i < shas.length; i++) {
+    onProgress?.({
+      phase: 'details',
+      current: i + 1,
+      total: shas.length,
+      message: `Fetching commit details (${i + 1}/${shas.length})...`,
+    });
+
+    const url = `https://api.github.com/repos/${owner}/${repo}/commits/${shas[i]}`;
+    const res = await rateLimitedFetch(url, headers);
+    const data = await res.json();
+
+    details.push({
+      sha: data.sha,
+      files: data.files || [],
+      stats: data.stats || { additions: 0, deletions: 0, total: 0 },
+    });
+
+    // Small delay between requests to avoid secondary rate limits
+    if (i < shas.length - 1) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
   }
-  return res.text();
+
+  return details;
 };

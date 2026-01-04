@@ -1,44 +1,44 @@
-# Gitingest Replica
+# RepoInsights
 
-A client-side replica of [gitingest.com](https://gitingest.com) built with React, TypeScript, and Tailwind CSS. This tool allows you to turn any Git repository into a text digest suitable for LLMs.
+A client-side GitHub repository analytics tool built with React, TypeScript, and Tailwind CSS. Discover which files change most, who contributes what, and how your codebase evolves over time.
 
 ## Features
 
-- ⚛️ **Client-Side Analysis**: Directly interacts with GitHub API from your browser.
-- 🌳 **Recursive Tree View**: Visualizes repository structure.
-- 📄 **Smart Ingestion**: Concatenates code files while filtering binaries and lock files.
-- 📊 **Token Estimation**: Estimates token count for LLMs.
-- 🎨 **Premium Dark Theme**: Designed for a modern developer experience.
-- 🚀 **GitHub Pages Ready**: Deployed instantly to GitHub Pages.
+- **Hot Files**: Ranked list of most-changed files by commit frequency, additions, or deletions
+- **Contributor Stats**: Who changed which files, commit counts, and file ownership
+- **Activity Heatmap**: Weekly activity visualization with monthly grouping
+- **Export**: Download analytics as JSON or CSV
+- **Caching**: Results cached in localStorage (1hr TTL) to reduce API calls
+- **Rate Limit Handling**: Automatic retry with backoff for GitHub API limits
 
 ## Usage
 
 ### Development
 
-1.  **Start the development server:**
-    ```bash
-    npm start
-    ```
-2.  **Build for production:**
-    ```bash
-    npm run build
-    ```
+1. **Start the development server:**
+   ```bash
+   npm start
+   ```
+
+2. **Build for production:**
+   ```bash
+   npm run build
+   ```
 
 ### Deployment
 
-To deploy updates to GitHub Pages, you can use the automated script or the manual command:
+To deploy to GitHub Pages:
 
-**Option 1: Automated Script (Recommended)**
 ```bash
 npm run auto-deploy
 ```
-This script checks dependencies, builds the project, and deploys it.
 
-**Option 2: Manual Deployment**
-```bash
-npm run deploy
-```
-Use this if you just want to run the `gh-pages` command (requires a previous build).
+## How It Works
+
+1. Enter a GitHub repository URL (e.g., `https://github.com/facebook/react`)
+2. Optionally add a GitHub Personal Access Token for higher rate limits (5,000 vs 60 requests/hour)
+3. The app fetches up to 500 commits and analyzes file changes
+4. View analytics across three tabs: Hot Files, Contributors, Activity
 
 ## Tech Stack
 
@@ -47,7 +47,15 @@ Use this if you just want to run the `gh-pages` command (requires a previous bui
 - Tailwind CSS
 - Lucide React (Icons)
 - Framer Motion (Animations)
-- GPT Tokenizer
+
+## API Limits
+
+| Auth Status | Rate Limit |
+|-------------|------------|
+| No token | 60 requests/hour |
+| With PAT | 5,000 requests/hour |
+
+The app fetches up to 500 commits (list) and 200 commits (detailed file changes) per analysis.
 
 ## License
 

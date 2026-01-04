@@ -1,5 +1,5 @@
 import React from 'react';
-import { Github } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,13 +11,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <header className="border-b border-gray-800 bg-[#161b22]/80 backdrop-blur-md sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Github className="w-8 h-8 text-white" />
-                    <span className="text-xl font-bold tracking-tight">Gitingest</span>
+                    <BarChart2 className="w-8 h-8 text-white" />
+                    <span className="text-xl font-bold tracking-tight">RepoInsights</span>
                 </div>
                 <div className="flex items-center gap-4">
-                     <a href="https://github.com/coderamp-labs/gitingest" target="_blank" rel="noreferrer" className="text-sm text-gray-400 hover:text-white transition-colors">
-                        GitHub
-                     </a>
+                     <span className="text-sm text-gray-500">GitHub Repository Analytics</span>
                 </div>
             </div>
         </header>
@@ -27,7 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       <footer className="border-t border-gray-800 mt-20 py-8 text-center text-gray-500 text-sm">
-        <p>Built as a replica of gitingest.com</p>
+        <p>RepoInsights - GitHub Repository Analytics</p>
       </footer>
     </div>
   );
